@@ -37,6 +37,7 @@ function init() {
 
 	game.state.add("Preloader", Game.Preloader);
 	game.state.add("Main", Game.Main);
+	game.state.add("BlendModeTest", Game.BlendModeTest);
 	
 	game.state.start("Preloader");
 };
@@ -47,7 +48,7 @@ function timeEvent(seconds, func, scope) {
 };
 
 function sound(name, volume, loop, pitch) {
-	console.log("sound", name)
+	//console.log("sound", name)
 	var sound = game.add.audio(name, volume || 1, loop);
     sound.play();
     if (sound._sound) sound._sound.playbackRate.value = pitch || 1;
@@ -80,6 +81,13 @@ function sleep(millisec) {
 		game.paused = false;
 	}, millisec);
 };
+
+function destroyWrap(obj) {
+	return function(){
+		setTimeout(obj.destroy.bind(obj), 0);
+	}
+	
+}
 
 function getParams() {
     qs = document.location.search.split('+').join(' ');
