@@ -15,257 +15,191 @@ This is the Player aka the demon contructor.
 
 @return {Phaser.Sprite} - The player object
 */
-var Player = function(world, x, y) {
-	var player = game.add.sprite(x, y, "atlas", "dengel_walk_down_1", world.middleLayer);
-	
-	//Configure physics
-	game.physics.ninja.enable(player, 1);
-    player.body.drag = 0.001;
-	
-	//Config body size and alignment
-	player.body.setSize(12,12);
-	player.anchor.set(0.5,0.6);
+var Player = function (world, x, y) {// eslint-disable-line
+ // Private variables
+  var speed = 80
 
-	player.state = STATES.NORMAL;
-	player.maxHP = 8;
-	player.hp = 8;
+  var player = G.Sprite(x, y, 'dengel_walk_down_1', world.middleLayer)
+  // Configure physics
+  game.physics.ninja.enable(player, 1)
+  player.body.drag = 0.000
+  player.body.bounce = 0.000
+  player.body.friction = 0.000
+  console.log(player)
+  player.body.x -= 3 * 8
+  player.body.y -= 4 * 8
+  player.body.collideWorldBounds = false
 
-	player.item1 = null;
-	player.item2 = null;
+  // Config body size and alignment
+  player.body.setSize(12, 12)
+  player.anchor.set(0.5, 0.6)
 
-	player.item1 = Scythe(player, world);
+  player.state = STATES.NORMAL
+  player.maxHP = 8
+  player.hp = 8
 
-	//Prepare animations
-	player.animations.add("stand_up", ["dengel_stand_up_0"], 12, true);
-	player.animations.add("stand_down", ["dengel_stand_down_0"], 12, true);
-	player.animations.add("stand_left", ["dengel_stand_left_0"], 12, true);
-	player.animations.add("stand_right", ["dengel_stand_right_0"], 12, true);
-	addAnimation(player, "walk_down", "dengel_walk_down", 8, 20, true);
-	addAnimation(player, "walk_up", "dengel_walk_up", 8, 20, true);
-	addAnimation(player, "walk_left", "dengel_walk_left", 8, 20, true);
-	addAnimation(player, "walk_right", "dengel_walk_right", 8, 20, true);
-	
-	
-	player.animations.play("stand_down");
-	
-	//Private variables
-	var speed = 110;
-	var lookDirection = DOWN;
-	player.lookDirection = lookDirection;
-	var shell = null;
-	var inChange = false;
-	player.damageSave = false;
+  player.item1 = null
+  player.item2 = null
 
-	player.humanInput = true;
+  player.item1 = Scythe(player, world)
 
-	player.update = function() {
-		if (player.item1) player.item1.update();
-		if (player.item2) player.item2.update();
-	}
+  // Prepare animations
+  player.animations.add('stand_up', ['dengel_stand_up_0'], 12, true)
+  player.animations.add('stand_down', ['dengel_stand_down_0'], 12, true)
+  player.animations.add('stand_left', ['dengel_stand_left_0'], 12, true)
+  player.animations.add('stand_right', ['dengel_stand_right_0'], 12, true)
+  G.addAnimation(player, 'walk_down', 'dengel_walk_down', 20, true)
+  G.addAnimation(player, 'walk_up', 'dengel_walk_up', 20, true)
+  G.addAnimation(player, 'walk_left', 'dengel_walk_left', 20, true)
+  G.addAnimation(player, 'walk_right', 'dengel_walk_right', 20, true)
 
-	console.log(player.body);
+  player.animations.play('stand_down')
 
-	/*
-	Handels the input from Pad class. Has to be called every frame.
-	*/
-	player.input = function() {
-		var stand = true;
-		var newAnimation = "stand";
+  player.inChange = false
+  player.damageSave = false
+  player.humanInput = true
+  player.lookDirection = C.DOWN
 
-		var diagonalFactor = (Pad.isDown(Pad.LEFT) || Pad.isDown(Pad.RIGHT)) && (Pad.isDown(Pad.UP) || Pad.isDown(Pad.DOWN)) ? 0.707 : 1; 
+  player.update = function () {
+    if (player.item1) player.item1.update()
+    if (player.item2) player.item2.update()
+  }
 
-		
+  function setMove (padKey, axis, multi, dirID) {
+    if (Pad.isDown(padKey)) {
+      player.body[axis] += DT * speed * 1 * multi
+      player.state = STATES.WALK
+      player.lookDirection = dirID
+    }
+  }
 
-		//Process movement and animation
-		if (player.state !== STATES.STONE && player.state !== STATES.INUSE && !(Pad.isDown(Pad.LEFT) && Pad.isDown(Pad.RIGHT)) && !(Pad.isDown(Pad.UP) && Pad.isDown(Pad.DOWN))) {
-			function setMove(padKey,axis, multi,dirID) {
-				if (Pad.isDown(padKey)) {
-					player.body[axis] += DT * speed * diagonalFactor * multi;
-					stand = false;
-					lookDirection = dirID;
-					player.lookDirection = lookDirection;
-				}
-			}
+  /*
+  Handels the input from Pad class. Has to be called every frame.
+  */
+  player.input = function () {
+    player.state = STATES.STAND
 
-			setMove(Pad.LEFT, "x", -1, LEFT);
-			setMove(Pad.RIGHT, "x", 1, RIGHT);
-			setMove(Pad.UP, "y", -1, UP);
-			setMove(Pad.DOWN, "y", 1, DOWN);
+    var diagonalFactor = Pad.isDiagonalInput() ? 0.707 : 1
+    var isTwoSideKeyDown = Pad.isCounterDirektionInput()
+    // Process movement and animation
+    if (player.state !== STATES.STONE && player.state !== STATES.INUSE) {
+      if (!isTwoSideKeyDown) {
+        setMove(Pad.LEFT, 'x', -1, C.LEFT)
+        setMove(Pad.RIGHT, 'x', 1, C.RIGHT)
+        setMove(Pad.UP, 'y', -1, C.UP)
+        setMove(Pad.DOWN, 'y', 1, C.DOWN)
+      }
 
-			if (player.animations.currentAnim.name.indexOf("stand") !== -1 || diagonalFactor == 1) {
-				player.animations.play("walk_" + lookDirection);
-				player.state = STATES.WALK;
-			}
-		}
-		
-		if (stand && player.state != STATES.STONE && player.state !== STATES.INUSE) {
-			player.animations.play("stand_" + lookDirection);
-			player.state = STATES.STAND;
-		}
+      if (player.state === STATES.WALK && (diagonalFactor === 1 || player.animations.currentAnim.name.indexOf('stand') !== -1)) {
+        player.animations.play('walk_' + player.lookDirection)
+      } else if (player.state === STATES.STAND) {
+        player.animations.play('stand_' + player.lookDirection)
+      }
+    }
+  }
 
+  player.onHit = GenPool.onHit
 
-		//Turn on/off multiplayer, will detroy stone at the moment
-		if (Pad.justDown(Pad.SELECT)) {
-			world.cursor.visible = !world.cursor.visible;
-			/*if (player.humanInput == false && world.cursor.visible) {
-				setHumanInput(true);
-			}*/
-		}
+  function swapStone () {
+    if (player.inChange) return
+    if (player.state === STATES.STONE) {
+      fromStone()
+      player.setUI()
+      if (world.pig.state === STATES.NORMAL) world.pig.teleport()
+    } else {
+      toStone()
+      world.pig.setUI()
+    }
+  }
 
-		//Swap between stone and flesh
-		if (Pad.justDown(Pad.X)) {
-			swapStone();
-		}
+  function setUI () {
+    world.ui.setIconY(0)
+    world.ui.setIconB(7)
+    world.ui.setIconX(1)
+  }
 
-		//Item slot 1
-		if (player.state != STATES.INUSE && player.state != STATES.STONE) {
-			if (Pad.justDown(Pad.Y) && player.item1) {
-				player.item1.action();
-			}
+  // Creates a stone statue an replaces the demon char
+  function toStone () {
+    player.visible = false
+    player.state = STATES.STONE
+    player.animations.play('stand_' + player.lookDirection)
+    player.shell = PlayerShell(world, player)
+  }
 
-			if (Pad.justDown(Pad.B) && player.item2) {
-				player.item2.action();
-			}
-		}
-		
+  // shatters the stone statue and get back the demon char
+  function fromStone () {
+    if (player.state === STATES.STONE) {
+      player.shell.shutter()
+      player.state = STATES.NORMAL
+      player.inChange = true
+      player.visible = true
+    }
+  }
 
-	}
+  /* usefull vor event stuff also used vor map transitions */
+  function walkAuto (dir, tiles) {
+    tiles = tiles || 1
+    var x = 0
+    var y = 0
 
-	player.onHit = GenPool.onHit;
+    switch (dir) {
+      case C.UP: y = -16 * tiles; break
+      case C.DOWN: y = 16 * tiles; break
+      case C.LEFT: x = -16 * tiles; break
+      case C.RIGHT: x = 16 * tiles; break
+    }
 
-	//Helper for turn on/off stone swap
-	function setHumanInput(isOn) {
-		player.humanInput = isOn;
-		if (isOn) {
-			fromStone();
-		} else {
-			toStone();
-		}
-	}
+    G.Tween(player.body, {
+      x: player.x + x,
+      y: player.y + y
+    }, 200 * tiles).start()
 
-	function swapStone() {
-		if (inChange) return;
-		if (player.state == STATES.STONE) {
-			fromStone();
-			world.pig.teleport();
-		} else {
-			toStone();
-		}
-	}
+    player.animations.play('walk_' + dir)
+    player.lookDirection = dir
+  }
 
-	//Creates a stone statue an replaces the demon char
-	function toStone() {
-		player.visible = false;
-		player.state = STATES.STONE;
-		shell = game.add.sprite(player.body.x - 32, player.body.y - 32, "atlas", "player_to_stone_0", world.middleLayer);
-		game.physics.ninja.enable(shell);
-		shell.body.bounce = 0;
-	    shell.body.drag = 0;
-	    shell.body.oldPos = {x: shell.body.x, y: shell.body.y}
-		shell.body.setSize(12,12);
-		shell.anchor.set(0.5,0.6);
+  function myPostUpdate () {
+    if (player.attachedEvent == null) {
+      player.headIcon.visible = false
+      player.reflection.myUpdate()
+    }
+  }
 
-		sound("player_to_stone");
+  HeadIcon(player, 8, -25)
 
-		shell.sound = null
+  player.fromStone = fromStone
+  player.walkAuto = walkAuto
+  player.myPostUpdate = myPostUpdate
+  player.swapStone = swapStone
+  player.setUI = setUI
 
-		inChange = true;
+  return player
+}
 
+var ReflectionPlayer = function (world) {// eslint-disable-line
+  var player = world.player
 
-		shell.update = function() {
-			var dx = shell.body.x - shell.body.oldPos.x;
-			var dy = shell.body.y - shell.body.oldPos.y;
+  var reflection = G.Sprite(0, 0, 'player_walk_down_1', world.reflectionLayer)
+  reflection.scale.y = -1
 
-			if (dx != 0 || dy != 0) {
-				if (shell.sound == null) shell.sound = sound("stone_push", 1, true);
-			} else {
-				if (shell.sound != null) {
-					shell.sound.stop();
-					shell.sound.destroy();
-					shell.sound = null;
-				}
-			}
+  reflection.animations.add('stand_up', ['player_walk_up_1'], 12, true)
+  reflection.animations.add('stand_down', ['player_walk_down_1'], 12, true)
+  reflection.animations.add('stand_left', ['player_walk_left_1'], 12, true)
+  reflection.animations.add('stand_right', ['player_walk_right_1'], 12, true)
+  G.addAnimation(reflection, 'walk_down', 'player_walk_down', 10, true)
+  G.addAnimation(reflection, 'walk_up', 'player_walk_up', 10, true)
+  G.addAnimation(reflection, 'walk_left', 'player_walk_left', 10, true)
+  G.addAnimation(reflection, 'walk_right', 'player_walk_right', 10, true)
+  reflection.alpha = 0.75
+  world.player.reflection = reflection
 
-			shell.body.oldPos.x = shell.body.x;
-			shell.body.oldPos.y = shell.body.y;
+  reflection.myUpdate = function () {
+    var follow = player.state === STATES.STONE ? player.shell : player
+    reflection.x = follow.body.x - 32
+    reflection.y = follow.body.y + 50
 
-			player.body.x = shell.x;
-			player.body.y = shell.y;
-		}
+    reflection.animations.play(player.animations.currentAnim.name)
+  }
 
-		
-		shell.fromStone = shell.animations.add("from_stone", [
-			"dengel_from_stone_0",
-			"dengel_from_stone_1",
-			"dengel_from_stone_2",
-			"dengel_from_stone_3",
-			"dengel_from_stone_4",
-			"dengel_from_stone_5",
-			"dengel_from_stone_6",
-			"dengel_from_stone_7",
-			"dengel_from_stone_8",
-			"dengel_from_stone_9",
-			], 24, false, true);
-		shell.fromStone.onComplete.add(function(){
-			setTimeout(function(){
-				if (shell.sound) shell.sound.destroy();
-				inChange = false;
-				shell.destroy();
-			},10)
-			
-		});
-		shell.toStone = shell.animations.add("to_stone", ["dengel_to_stone_0", "dengel_to_stone_1", "dengel_to_stone_2", "dengel_to_stone_3", "dengel_to_stone_4"], 24, false, true);
-		shell.toStone.onComplete.add(function(){
-			inChange = false;
-			
-		});
-		shell.animations.play("to_stone");
-		player.shell = shell;
-
-		
-	}
-
-	//shatters the stone statue and get back the demon char
-	function fromStone() {
-		if (player.state == STATES.STONE) {
-			shell.body.y+=1;
-			player.state = STATES.NORMAL;
-			inChange = true;
-			shell.animations.play("from_stone");
-			player.visible = true;
-
-			sound("player_from_stone");
-		}
-	}
-
-	player.fromStone = fromStone;
-
-	return player;
-};
-
-var ReflectionPlayer = function(world) {
-	var player = world.player;
-	console.log(player)
-
-	var reflection = game.add.sprite(0, 0, "atlas", "player_walk_down_1", world.reflectionLayer);
-	reflection.scale.y = -1;
-
-	reflection.animations.add("stand_up", ["player_walk_up_1"], 12, true);
-	reflection.animations.add("stand_down", ["player_walk_down_1"], 12, true);
-	reflection.animations.add("stand_left", ["player_walk_left_1"], 12, true);
-	reflection.animations.add("stand_right", ["player_walk_right_1"], 12, true);
-	addAnimation(reflection, "walk_down", "player_walk_down", 4, 10, true);
-	addAnimation(reflection, "walk_up", "player_walk_up", 4, 10, true);
-	addAnimation(reflection, "walk_left", "player_walk_left", 4, 10, true);
-	addAnimation(reflection, "walk_right", "player_walk_right", 4, 10, true);
-	reflection.alpha = 0.75;
-
-	reflection.update = function() {
-		reflection.x = player.x - 32;
-		reflection.y = player.y + 54;
-
-		reflection.animations.play(player.animations.currentAnim.name);
-	}
-
-	return reflection;
+  return reflection
 }
